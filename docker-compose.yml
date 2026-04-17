@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: ecommerce_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ecommerce_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - ./ecommerce-backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./ecommerce-backend
+      dockerfile: Dockerfile
+    container_name: ecommerce_backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - STRIPE_SECRET_KEY=sk_test_fake
+      - STRIPE_PUBLIC_KEY=pk_test_fake
+      - JWT_SECRET=b63c7b8e19c04a08b3e2b2c9ad3b4f62d85c4a7e94a8e329188a10b49bcab392
+      - ANALYTICS_INTERNAL_API_KEY=b7f8e9a2d3c4b5a6901f2e3d4c5b6a78
+      - AI_SERVICE_URL=http://ai-service:8000
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/ecommerce_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=password
+    depends_on:
+      db:
+        condition: service_healthy
+
+  ai-service:
+    build:
+      context: ./ecommerce-backend/ai-service
+      dockerfile: Dockerfile
+    container_name: ecommerce_ai_service
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@db:5432/ecommerce_db
+      - ANALYTICS_INTERNAL_API_KEY=b7f8e9a2d3c4b5a6901f2e3d4c5b6a78
+      - BACKEND_URL=http://backend:8080
+      - LMSTUDIO_BASE_URL=http://host.docker.internal:1234/v1
+      - LMSTUDIO_MODEL=mistralai-mistral-nemo-instruct-2407-12b-mpoa-v1
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-lm-studio}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./ecommerce-frontend
+      dockerfile: Dockerfile
+    container_name: ecommerce_frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:

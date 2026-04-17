@@ -1,0 +1,63 @@
+<div class="ai-chat-container" *ngIf="isLoggedIn$ | async">
+  <!-- Floating Button -->
+  <button class="chat-toggle-btn" (click)="toggleChat()" [class.open]="isOpen">
+    <span *ngIf="!isOpen">✨</span>
+    <span *ngIf="isOpen">✕</span>
+  </button>
+
+  <!-- Chat Window -->
+  <div class="chat-window" *ngIf="isOpen">
+    <div class="chat-header">
+      <div class="header-info">
+        <h3>AI Data Analytics</h3>
+        <span class="status-badge">Online</span>
+      </div>
+      <p class="subtitle">Multi-Agent Text2SQL Engine</p>
+    </div>
+
+    <div class="chat-body" #scrollMe>
+      <div *ngFor="let msg of messages; let i = index" [class]="'message-wrapper ' + msg.sender">
+        <div class="message">
+          <div class="message-bubble">
+            <div class="message-markup" *ngIf="msg.renderedHtml; else plainText" [innerHTML]="msg.renderedHtml"></div>
+            <ng-template #plainText>
+              <p>{{ msg.text }}</p>
+            </ng-template>
+            <div *ngIf="msg.visualizationCode" class="visualization-container">
+              <div [id]="'viz-' + i" class="plotly-chart"></div>
+            </div>
+          </div>
+          <span class="timestamp">{{ msg.timestamp | date:'HH:mm' }}</span>
+        </div>
+      </div>
+      
+      <!-- Typin Indicator -->
+      <div *ngIf="isLoading" class="message-wrapper bot">
+        <div class="message">
+          <div class="message-bubble loading">
+            <div class="typing-dots">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-footer">
+      <div class="input-wrapper">
+        <input 
+          type="text" 
+          [(ngModel)]="userInput" 
+          (keyup.enter)="sendMessage()" 
+          placeholder="Ask about sales, products, revenue..."
+          [disabled]="isLoading"
+        />
+        <button class="send-btn" (click)="sendMessage()" [disabled]="isLoading || !userInput.trim()">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

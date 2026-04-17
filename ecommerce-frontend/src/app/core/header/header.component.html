@@ -1,0 +1,389 @@
+<header class="bg-white shadow-md sticky top-0 z-50">
+  <div class="bg-gray-100 py-1 px-4 text-xs text-gray-600 hidden md:block">
+    <div class="container mx-auto flex justify-end space-x-4">
+      <a href="#" class="hover:text-violet-500">My Coupons</a>
+      <a href="#" class="hover:text-violet-500">Sell on Vera</a>
+      <a href="#" class="hover:text-violet-500">Help & Support</a>
+    </div>
+  </div>
+
+  <div class="container mx-auto px-4 py-3">
+    <div class="flex justify-between items-center space-x-4">
+      <div class="md:hidden">
+        <button
+          (click)="toggleMobileMenu()"
+          type="button"
+          class="p-1 text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-violet-500"
+        >
+          <span class="sr-only">Open main menu</span>
+          <svg
+            *ngIf="!isMobileMenuOpen"
+            class="h-6 w-6"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 6h16M4 12h16M4 18h16"
+            />
+          </svg>
+          <svg
+            *ngIf="isMobileMenuOpen"
+            class="h-6 w-6"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+      </div>
+
+      <div class="flex-shrink-0">
+        <a routerLink="/" class="cursor-pointer">
+          <span class="text-2xl font-bold text-violet-500">Vera</span>
+        </a>
+      </div>
+
+      <div class="flex-grow max-w-xl mx-4 hidden md:block">
+        <div class="relative">
+          <input
+            type="text"
+            placeholder="Search products or categories..."
+            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-transparent"
+            [(ngModel)]="searchTerm"
+            (keyup.enter)="searchProducts()"
+          />
+          <button
+            type="button"
+            class="absolute right-0 top-0 mt-2 mr-3 text-violet-500 hover:text-violet-700"
+            (click)="searchProducts()"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-4 text-gray-700">
+        <ng-container *ngIf="!(isLoggedIn$ | async)">
+          <a
+            routerLink="/auth/login"
+            class="flex items-center space-x-1 hover:text-violet-500"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+              />
+            </svg>
+            <span class="text-sm hidden lg:inline">Login / Sign Up</span>
+          </a>
+        </ng-container>
+        <ng-container *ngIf="isLoggedIn$ | async">
+          <a
+            routerLink="/profile"
+            class="flex items-center space-x-1 hover:text-violet-500"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+              />
+            </svg>
+            <span class="text-sm hidden lg:inline">My Account</span>
+          </a>
+          <!-- Seller Dashboard Link -->
+          <a
+            *ngIf="isSeller$ | async"
+            routerLink="/seller"
+            class="flex items-center space-x-1 text-violet-600 hover:text-violet-800 font-medium"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2" />
+            </svg>
+            <span class="text-sm hidden lg:inline">Seller Dashboard</span>
+          </a>
+          <a href="#" class="flex items-center space-x-1 hover:text-violet-500">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+              />
+            </svg>
+            <span class="text-sm hidden lg:inline">Favorites</span>
+          </a>
+          <button
+            type="button"
+            (click)="logout()"
+            class="flex items-center space-x-1 hover:text-violet-500"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+              />
+            </svg>
+            <span class="text-sm hidden lg:inline">Logout</span>
+          </button>
+        </ng-container>
+        <a
+          routerLink="/cart"
+          class="relative flex items-center space-x-1 hover:text-violet-500"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+            />
+          </svg>
+          <span class="text-sm hidden lg:inline">My Cart</span>
+          <span
+            *ngIf="itemCount$ | async as count"
+            [hidden]="count === 0"
+            class="absolute -top-2 -right-2 bg-violet-500 text-white text-xs font-semibold rounded-full px-1.5 py-0.5 min-w-[18px] text-center"
+          >
+            {{ count }}
+          </span>
+        </a>
+      </div>
+    </div>
+    <div class="mt-3 md:hidden px-4 pb-2">
+      <div class="relative">
+        <input
+          type="text"
+          placeholder="Search products or categories..."
+          class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-transparent"
+          [(ngModel)]="searchTerm"
+          (keyup.enter)="searchProducts()"
+        />
+        <button
+          type="button"
+          class="absolute right-0 top-0 mt-2 mr-3 text-violet-500 hover:text-violet-700"
+          (click)="searchProducts()"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div
+    class="md:hidden border-t border-gray-200"
+    id="mobile-menu"
+    [class.hidden]="!isMobileMenuOpen"
+  >
+    <ul class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+      <li>
+        <a
+          href="#"
+          class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-white hover:bg-violet-500"
+          >Women</a
+        >
+      </li>
+      <li>
+        <a
+          href="#"
+          class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-white hover:bg-violet-500"
+          >Men</a
+        >
+      </li>
+      <li>
+        <a
+          href="#"
+          class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-white hover:bg-violet-500"
+          >Kids</a
+        >
+      </li>
+      <li>
+        <a
+          href="#"
+          class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-white hover:bg-violet-500"
+          >Home & Living</a
+        >
+      </li>
+      <li>
+        <a
+          href="#"
+          class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-white hover:bg-violet-500"
+          >Grocery</a
+        >
+      </li>
+      <li>
+        <a
+          href="#"
+          class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-white hover:bg-violet-500"
+          >Cosmetics</a
+        >
+      </li>
+      <li>
+        <a
+          href="#"
+          class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-white hover:bg-violet-500"
+          >Shoes & Bags</a
+        >
+      </li>
+      <li>
+        <a
+          href="#"
+          class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-white hover:bg-violet-500"
+          >Electronics</a
+        >
+      </li>
+      <li>
+        <a
+          href="#"
+          class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-white hover:bg-violet-500"
+          >Sports & Outdoor</a
+        >
+      </li>
+    </ul>
+  </div>
+
+  <nav class="bg-white border-t border-gray-200 hidden md:block">
+    <div class="container mx-auto px-4">
+      <ul class="flex space-x-6 py-2 text-sm font-medium text-gray-700">
+        <li>
+          <a
+            href="#"
+            class="hover:text-violet-500 border-b-2 border-transparent hover:border-violet-500 pb-1"
+            >Women</a
+          >
+        </li>
+        <li>
+          <a
+            href="#"
+            class="hover:text-violet-500 border-b-2 border-transparent hover:border-violet-500 pb-1"
+            >Men</a
+          >
+        </li>
+        <li>
+          <a
+            href="#"
+            class="hover:text-violet-500 border-b-2 border-transparent hover:border-violet-500 pb-1"
+            >Kids</a
+          >
+        </li>
+        <li>
+          <a
+            href="#"
+            class="hover:text-violet-500 border-b-2 border-transparent hover:border-violet-500 pb-1"
+            >Home & Living</a
+          >
+        </li>
+        <li>
+          <a
+            href="#"
+            class="hover:text-violet-500 border-b-2 border-transparent hover:border-violet-500 pb-1"
+            >Grocery</a
+          >
+        </li>
+        <li>
+          <a
+            href="#"
+            class="hover:text-violet-500 border-b-2 border-transparent hover:border-violet-500 pb-1"
+            >Cosmetics</a
+          >
+        </li>
+        <li>
+          <a
+            href="#"
+            class="hover:text-violet-500 border-b-2 border-transparent hover:border-violet-500 pb-1"
+            >Shoes & Bags</a
+          >
+        </li>
+        <li>
+          <a
+            href="#"
+            class="hover:text-violet-500 border-b-2 border-transparent hover:border-violet-500 pb-1"
+            >Electronics</a
+          >
+        </li>
+        <li>
+          <a
+            href="#"
+            class="hover:text-violet-500 border-b-2 border-transparent hover:border-violet-500 pb-1"
+            >Sports & Outdoor</a
+          >
+        </li>
+      </ul>
+    </div>
+  </nav>
+</header>

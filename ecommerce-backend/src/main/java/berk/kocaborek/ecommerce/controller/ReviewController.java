@@ -1,0 +1,97 @@
+package berk.kocaborek.ecommerce.controller;
+
+import org.springframework.http.HttpStatus; // Eklendi
+import org.springframework.http.ResponseEntity; // Eklendi
+// Doğru RequestBody importu
+import org.springframework.web.bind.annotation.*; // *, PathVariable, PutMapping, DeleteMapping için
+
+import berk.kocaborek.ecommerce.dto.ReviewDTO;
+import berk.kocaborek.ecommerce.service.ProductService;
+import berk.kocaborek.ecommerce.service.ReviewService;
+
+import java.util.List;
+
+import org.springframework.security.access.prepost.PreAuthorize;
+import jakarta.validation.Valid;
+// import org.springframework.web.bind.annotation.GetMapping; // @RestController içinde zaten var
+// import org.springframework.web.bind.annotation.PostMapping; // @RestController içinde zaten var
+// import org.springframework.web.bind.annotation.RequestParam; // @PathVariable kullanılacak
+
+@RestController
+@RequestMapping("/api/reviews")
+public class ReviewController {
+
+    private final ReviewService reviewService;
+    private final ProductService productService;
+
+    public ReviewController(ReviewService reviewService,ProductService productService) {
+        this.reviewService = reviewService;
+        this.productService =productService;
+    }
+
+    // ✅ 1. Kullanıcı - Ürün Yorumları Görüntüleme (PathVariable ile)
+    @GetMapping("/product/{productId}")
+    public ResponseEntity<List<ReviewDTO>> getReviewsByProductId(@PathVariable Long productId) {
+        List<ReviewDTO> reviews = reviewService.getReviewsByProductId(productId);
+        return ResponseEntity.ok(reviews); // 200 OK
+    }
+
+       @GetMapping("/{productId}/reviews")
+public ResponseEntity<List<ReviewDTO>> getProductReviews(@PathVariable Long productId) {
+    // ProductService üzerinden (veya ReviewService üzerinden) metodu çağır
+    List<ReviewDTO> reviews = productService.getReviewsForProduct(productId);
+    return ResponseEntity.ok(reviews);
+}
+
+    // ✅ 2. Kullanıcı - Ürün Yorumları Oluşturma (Doğru RequestBody kullanımı, ResponseEntity dönüşü)
+    // productId'yi DTO'ya eklemek veya path variable yapmak daha iyi olabilir, şimdilik böyle bırakıldı.
+    @PostMapping("/create/{productId}")
+    @PreAuthorize("hasAnyRole('CUSTOMER','ADMIN')")
+    public ResponseEntity<ReviewDTO> createReview(@Valid @RequestBody ReviewDTO reviewDto, @PathVariable Long productId) {
+        ReviewDTO createdReview = reviewService.createReview(reviewDto, productId);
+        return new ResponseEntity<>(createdReview, HttpStatus.CREATED); // 201 Created
+    }
+
+    // ✅ 3. Kullanıcı - Ürün Yorumları Güncelleme (PutMapping, PathVariable, Doğru RequestBody)
+    @PutMapping("/update/{id}")
+    @PreAuthorize("hasAnyRole('CUSTOMER','ADMIN')") // Yetkilendirme service katmanında da kontrol ediliyor
+    public ResponseEntity<ReviewDTO> updateReview(@PathVariable Long id, @Valid @RequestBody ReviewDTO reviewDto) {
+        ReviewDTO updatedReview = reviewService.updateReview(id, reviewDto);
+        return ResponseEntity.ok(updatedReview); // 200 OK
+    }
+
+    // ✅ 4. Kullanıcı - Ürün Yorumları Silme (DeleteMapping, PathVariable)
+    @DeleteMapping("/delete/{id}")
+    @PreAuthorize("hasAnyRole('CUSTOMER','ADMIN')") // Yetkilendirme service katmanında da kontrol ediliyor
+    public ResponseEntity<Void> deleteReview(@PathVariable Long id) {
+        reviewService.deleteReview(id);
+        return ResponseEntity.noContent().build(); // 204 No Content
+    }
+
+    // ✅ 5. Admin - Tüm Ürün Yorumları Görüntüleme
+    @GetMapping("/all")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<ReviewDTO>> getAllReviews() {
+        List<ReviewDTO> reviews = reviewService.getAllReviews();
+        return ResponseEntity.ok(reviews); // 200 OK
+    }
+
+    // ✅ 6. Seller - Kendi Ürünlerinin Yorumlarını Görüntüleme (Parametresiz, kimliği doğrulanmış satıcı için)
+    @GetMapping("/seller/my-products") // Daha açıklayıcı bir path
+    @PreAuthorize("hasRole('SELLER')")
+    public ResponseEntity<List<ReviewDTO>> getReviewsForMySellerProducts() {
+        // Servis metodu kimliği doğrulanmış kullanıcıyı içeriden alacak
+        List<ReviewDTO> reviews = reviewService.getReviewsForSellerProducts();
+        return ResponseEntity.ok(reviews);
+    }
+
+    // İsteğe bağlı: Belirli bir satıcının ID'si ile yorumları getirme (Admin için?)
+    /*
+    @GetMapping("/seller/{sellerId}")
+    @PreAuthorize("hasRole('ADMIN')") // Belki sadece adminler başka satıcıların yorumlarını görmeli
+    public ResponseEntity<List<ReviewDTO>> getReviewsBySellerId(@PathVariable Long sellerId) {
+        List<ReviewDTO> reviews = reviewService.getReviewsForSellerProductsById(sellerId); // Yeni servis metodu
+        return ResponseEntity.ok(reviews);
+    }
+    */
+}

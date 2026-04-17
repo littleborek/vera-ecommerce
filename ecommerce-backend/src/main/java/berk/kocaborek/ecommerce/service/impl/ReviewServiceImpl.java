@@ -1,0 +1,229 @@
+package berk.kocaborek.ecommerce.service.impl;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.util.HtmlUtils;
+
+
+import berk.kocaborek.ecommerce.entity.Product; 
+
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+import berk.kocaborek.ecommerce.dto.ReviewDTO;
+import berk.kocaborek.ecommerce.entity.Review;
+import berk.kocaborek.ecommerce.entity.User;
+import berk.kocaborek.ecommerce.repository.ProductRepository;
+import berk.kocaborek.ecommerce.repository.ReviewRepository;
+import berk.kocaborek.ecommerce.repository.UserRepository;
+import berk.kocaborek.ecommerce.service.ReviewService;
+
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class ReviewServiceImpl implements ReviewService {
+
+    private final ReviewRepository reviewRepository;
+    private final UserRepository userRepository;
+    private final ProductRepository productRepository; 
+
+    @Override
+    public ReviewDTO createReview(ReviewDTO reviewDto, Long productId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = auth.getName(); 
+
+        
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with email: " + email));
+
+    
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new EntityNotFoundException("Product not found with ID: " + productId));
+
+       
+        Review review = new Review();
+        review.setUser(user);
+        review.setProduct(product);
+        review.setStarRating(reviewDto.getStarRating());
+        review.setComment(sanitizeReviewComment(reviewDto.getComment()));
+
+        Review savedReview = reviewRepository.save(review);
+
+        return mapToDTO(savedReview);
+    }
+
+    @Override
+    @Transactional(readOnly = true) // Sadece okuma işlemi yapıldığı için performansı artırabilir
+    public ReviewDTO getReviewById(Long id) {
+        Review review = reviewRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Review not found with ID: " + id));
+        return mapToDTO(review);
+    }
+
+    @Override
+    @Transactional(readOnly = true) // Sadece okuma işlemi
+    public List<ReviewDTO> getAllReviews() {
+        List<Review> reviews = reviewRepository.findAll();
+        return reviews.stream()
+                .map(this::mapToDTO) // Her bir Review nesnesini DTO'ya çevir
+                .collect(Collectors.toList()); // Sonuçları liste olarak topla
+    }
+
+    @Override
+    public ReviewDTO updateReview(Long id, ReviewDTO reviewDto) {
+        Review existingReview = reviewRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Review not found with ID: " + id));
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String currentUsername = auth.getName();
+        User currentUser = userRepository.findByEmail(currentUsername)
+                  .orElseThrow(() -> new EntityNotFoundException("User not found with email: " + currentUsername)); // orElseThrow kullanımı iyileştirildi
+
+        // Yorumu yapan kullanıcı veya admin değilse hata fırlat
+        
+        boolean isAdmin = auth.getAuthorities().stream()
+                              .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_ADMIN"));
+        if (!existingReview.getUser().equals(currentUser) && !isAdmin ) {
+           throw new SecurityException("You are not authorized to update this review.");
+        }
+
+        existingReview.setStarRating(reviewDto.getStarRating());
+        existingReview.setComment(sanitizeReviewComment(reviewDto.getComment()));
+        Review updatedReview = reviewRepository.save(existingReview);
+        return mapToDTO(updatedReview);
+    }
+
+
+    @Override
+     public void deleteReview(Long id) {
+         Review reviewToDelete = reviewRepository.findById(id)
+                 .orElseThrow(() -> new EntityNotFoundException("Review not found with ID: " + id));
+
+         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+         String currentUsername = auth.getName();
+         User currentUser = userRepository.findByEmail(currentUsername)
+                  .orElseThrow(() -> new EntityNotFoundException("User not found with email: " + currentUsername));
+
+          boolean isAdmin = auth.getAuthorities().stream()
+                              .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_ADMIN"));
+         if (!reviewToDelete.getUser().equals(currentUser) && !isAdmin) {
+            throw new SecurityException("You are not authorized to delete this review.");
+         }
+
+         reviewRepository.delete(reviewToDelete);
+     }
+
+    // --- Yardımcı Metotlar ---
+
+    /**
+     * Review entity'sini ReviewDTO'ya dönüştürür.
+     * @param review Dönüştürülecek Review nesnesi.
+     * @return ReviewDTO nesnesi.
+     */
+    private ReviewDTO mapToDTO(Review review) {
+        if (review == null) {
+            return null;
+        }
+        return ReviewDTO.builder()
+                .id(review.getId())
+                .userId(review.getUser() != null ? review.getUser().getId() : null)
+                .username(review.getUser() != null ? review.getUser().getUsername() : "Anonymous")
+                .productId(review.getProduct() != null ? review.getProduct().getId() : null)
+                .starRating(review.getStarRating())
+                .comment(review.getComment())
+                .createdAt(review.getCreatedAt())
+                .build();
+    }
+
+     @Override
+    @Transactional(readOnly = true)
+    public List<ReviewDTO> getReviewsByProductId(Long productId) {
+        // Ürünün var olup olmadığını kontrol etmek isteyebilirsiniz
+         if (!productRepository.existsById(productId)) {
+             throw new EntityNotFoundException("Product not found with ID: " + productId);
+         }
+        List<Review> reviews = reviewRepository.findByProductId(productId);
+        return reviews.stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ReviewDTO> getReviewsForSellerProducts() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String currentUsername = auth.getName();
+        User seller = userRepository.findByEmail(currentUsername)
+                .orElseThrow(() -> new EntityNotFoundException("Seller not found with email: " + currentUsername));
+
+        // Satıcının ürünlerini bul
+        List<Product> sellerProducts = productRepository.findByStoreId(seller.getId()); 
+
+        if (sellerProducts.isEmpty()) {
+            return Collections.emptyList(); // Satıcının ürünü yoksa boş liste dön
+        }
+
+        // Ürün ID'lerini al
+        List<Long> productIds = sellerProducts.stream()
+                                            .map(Product::getId)
+                                            .collect(Collectors.toList());
+
+        // Bu ürünlere ait yorumları bul (ReviewRepository'de findByProductIdIn metodu olmalı)
+        List<Review> reviews = reviewRepository.findByProductIdIn(productIds);
+
+        // DTO'ya çevir ve döndür
+        return reviews.stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true) // Lazy loading için önemli!
+public List<ReviewDTO> getReviewsForProduct(Long productId) {
+    // Repository metodunu çağır (Opsiyon 1 veya 2'ye göre)
+    List<Review> reviews = reviewRepository.findByProductIdWithUser(productId);
+    // Veya Opsiyon 2 için: List<Review> reviews = reviewRepository.findByProductIdOrderByCreatedAtDesc(productId);
+
+    return reviews.stream()
+            .map(this::mapReviewToDto) // DTO'ya çevir
+            .collect(Collectors.toList());
+}
+
+// Helper metod: Review entity'sini ReviewDTO'ya çevirir
+private ReviewDTO mapReviewToDto(Review review) {
+    if (review == null) return null;
+    ReviewDTO dto = new ReviewDTO();
+    dto.setId(review.getId());
+    dto.setStarRating(review.getStarRating());
+    dto.setComment(review.getComment());
+    dto.setCreatedAt(review.getCreatedAt()); // Tarih formatı önemli olabilir
+
+    if (review.getUser() != null) {
+        dto.setUserId(review.getUser().getId());
+        dto.setUsername(review.getUser().getUsername()); // Username'i User'dan al
+    } else {
+         dto.setUserId(null); // Veya hata durumu yönetimi
+         dto.setUsername("Unknown User");
+    }
+    return dto;
+}
+
+private String sanitizeReviewComment(String rawComment) {
+    if (rawComment == null) {
+        return null;
+    }
+
+    String normalized = rawComment.trim().replaceAll("[\\p{Cntrl}&&[^\r\n\t]]", "");
+    if (normalized.length() > 2000) {
+        normalized = normalized.substring(0, 2000);
+    }
+
+    return HtmlUtils.htmlEscape(normalized);
+}
+
+}
