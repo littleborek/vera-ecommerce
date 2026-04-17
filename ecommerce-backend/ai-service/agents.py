@@ -82,22 +82,20 @@ def sql_generator_node(state: AgentState) -> dict:
         "Rules:\n"
         "- Use only tables and columns that exist in the schema.\n"
         "- IMPORTANT: Replace any reference to 'user_id' or 'owner_id' with the ACTUAL NUMERIC VALUE {user_id} in your WHERE clauses. Do not use placeholders like <user_id> or :user_id.\n"
-        "- For SELLER, you MUST query only their products/orders. Example for 'my products': SELECT products.name, products.unit_price FROM products JOIN stores ON products.store_id = stores.id WHERE stores.owner_id = {user_id}.
-        "- IMPORTANT: The 'products' table does NOT have a 'status' or 'is_active' column. Do NOT try to filter with products.status or products.active.
-        "- For CUSTOMER, restrict personal data with WHERE user_id = {user_id}.
-        "- For ADMIN, do not add ownership filters unless requested.
-        "- Prefer LIMIT 50 for list-style queries.
-        "- For catalog ranking requests like 'most expensive 5 items', order products by unit_price DESC and use the requested LIMIT.
-        "- For review analytics such as 'which product has the most reviews' or 'en çok inceleme alan ürün', use products JOIN reviews with COUNT(reviews.id), GROUP BY the product, and ORDER BY the review count DESC.
-        "- For review questions, only add reviews.user_id = {user_id} when the user explicitly asks about their own reviews (for example: 'my reviews', 'how many reviews did I write', 'kaç inceleme yaptım').
-        "- If the user asks for the product with the most reviews, treat it as a public product-ranking question unless they explicitly ask about their own review activity.
-        "- CRITICAL: Do NOT use SELECT *. The backend rejects it. You MUST explicitly specify the column names you want to select.
-        "- CRITICAL: Do NOT include any SQL comments (-- or /* */). Do NOT end with a semicolon. Output ONLY the raw SQL query with no explanation.
-        "- CRITICAL: Do NOT invent or suggest facts about the data before it is retrieved. Your only job is to provide the SQL.
-
-Question: {question}
-
-SQL Query:"
+        "- For SELLER, you MUST query only their products/orders. Example for 'my products': SELECT products.name, products.unit_price FROM products JOIN stores ON products.store_id = stores.id WHERE stores.owner_id = {user_id}.\n"
+        "- IMPORTANT: The 'products' table does NOT have a 'status' or 'is_active' column. Do NOT try to filter with products.status or products.active.\n"
+        "- For CUSTOMER, restrict personal data with WHERE user_id = {user_id}.\n"
+        "- For ADMIN, do not add ownership filters unless requested.\n"
+        "- Prefer LIMIT 50 for list-style queries.\n"
+        "- For catalog ranking requests like 'most expensive 5 items', order products by unit_price DESC and use the requested LIMIT.\n"
+        "- For review analytics such as 'which product has the most reviews' or 'en çok inceleme alan ürün', use products JOIN reviews with COUNT(reviews.id), GROUP BY the product, and ORDER BY the review count DESC.\n"
+        "- For review questions, only add reviews.user_id = {user_id} when the user explicitly asks about their own reviews (for example: 'my reviews', 'how many reviews did I write', 'kaç inceleme yaptım').\n"
+        "- If the user asks for the product with the most reviews, treat it as a public product-ranking question unless they explicitly ask about their own review activity.\n"
+        "- CRITICAL: Do NOT use SELECT *. The backend rejects it. You MUST explicitly specify the column names you want to select.\n"
+        "- CRITICAL: Do NOT include any SQL comments (-- or /* */). Do NOT end with a semicolon. Output ONLY the raw SQL query with no explanation.\n"
+        "- CRITICAL: Do NOT invent or suggest facts about the data before it is retrieved. Your only job is to provide the SQL.\n\n"
+        "Question: {question}\n\n"
+        "SQL Query:"
     )
     chain = prompt | llm
     res = chain.invoke({
